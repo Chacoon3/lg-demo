@@ -21,6 +21,7 @@ dependencies = [
   "langchain-google-vertexai>=3.2.4",
   "langchain-google-genai>=4.2.7",
   "fastapi>=0.139.0",
+  "structlog>=24.4.0",
 ]
 
 [project.optional-dependencies]
