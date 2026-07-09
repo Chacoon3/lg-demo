@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "daily-agent"
+version = "0.1.0"
+description = "Python agent app + agent runtime starter project"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Your Name" }]
+dependencies = [
+  "fastapi>=0.116.0",
+  "uvicorn>=0.35.0",
+  "pydantic>=2.8.0",
+  "python-dotenv>=1.0.1",
+  "langgraph>=1.2.7",
+  "langchain>=1.3.11",
+  "langchain-ollama>=1.1.0",
+  "ollama>=0.6.2",
+  "langchain-google-vertexai>=3.2.4",
+  "langchain-google-genai>=4.2.7",
+  "fastapi>=0.139.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=24.8.0",
+  "isort>=5.13.0",
+  "pre-commit>=3.8.0",
+  "pylint>=3.2.0",
+  "pytest>=8.3.0",
+  "ruff>=0.6.0",
+  "mypy>=1.11.0",
+]
+
+[project.scripts]
+daily-agent = "agent_app.main:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+src_paths = ["src", "tests"]
+
+[tool.pylint.main]
+py-version = "3.11"
+
+[tool.pylint.messages_control]
+disable = [
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring",
+]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+mypy_path = "src"

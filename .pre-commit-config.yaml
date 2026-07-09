@@ -1,0 +1,50 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 8.0.1
+    hooks:
+      - id: isort
+        files: ^(src|tests)/.*\.py$
+        args: ["--profile", "black", "--line-length", "100", "src", "tests"]
+        pass_filenames: false
+
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+        files: ^(src|tests)/.*\.py$
+        language_version: python3.11
+        args: ["--line-length", "100", "src", "tests"]
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: ./.venv/Scripts/python.exe
+        language: system
+        types: [python]
+        files: ^(src|tests)/.*\.py$
+        pass_filenames: true
+        args:
+          - -m
+          - pylint
+          - --fail-under=7.5
+          - --max-line-length=100
+          - --init-hook=import sys; sys.path.append('src')
+          - --disable=C,R
+
+      - id: pytest-unit
+        name: pytest unit tests
+        entry: ./.venv/Scripts/python.exe -m pytest -q
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

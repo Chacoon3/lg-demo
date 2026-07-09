@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Black check
+        run: |
+          black --check src tests
+
+      - name: isort check
+        run: |
+          isort --check-only src tests
+
+      - name: pylint
+        run: |
+          pylint src tests --fail-under=7.5 --max-line-length=100 --disable=C,R
+
+      - name: Unit tests
+        run: |
+          pytest -q
