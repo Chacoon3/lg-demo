@@ -2,9 +2,9 @@
 
 import os
 
-from fastapi.concurrency import asynccontextmanager
-import uvicorn
 from fastapi import FastAPI
+from fastapi.concurrency import asynccontextmanager
+
 from agent_api.api import agent_api_router
 from agent_api.logging import get_logger
 from lg_demo.agent import Agent
@@ -33,7 +33,3 @@ app.include_router(
     tags=["agent_api"],
     router=agent_api_router,
 )
-
-if __name__ == "__main__":
-
-    uvicorn.run("agent_api.main:app", host="127.0.0.1", port=8000, reload=True)

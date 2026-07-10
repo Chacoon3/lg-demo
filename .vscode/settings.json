@@ -5,5 +5,7 @@
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestArgs": ["tests", "--manual"],
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "pylint.enabled": true,
+  "isort.args": ["--profile", "black"]
 }

@@ -1,21 +1,21 @@
+import operator
 import os
 from typing import Literal
 
+from langchain.messages import AnyMessage, SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
+from pydantic import BaseModel
+from structlog import get_logger
+from typing_extensions import Annotated
 
 from lg_demo.utils.tools import add, divide, multiply
 
-from langchain.messages import AnyMessage, ToolMessage
-from typing_extensions import TypedDict, Annotated
-import operator
 
-from langchain.messages import SystemMessage
-
-
-class MessagesState(TypedDict):
+class MessagesState(BaseModel):
     messages: Annotated[list[AnyMessage], operator.add]
-    llm_calls: int
+    llm_calls: Annotated[int, operator.add]
+    tool_calls: Annotated[int, operator.add]
 
 
 model = ChatOllama(
@@ -28,33 +28,34 @@ tools_by_name = {tool.name: tool for tool in tools}
 model_with_tools = model.bind_tools(tools)
 
 
-def llm_call(state: dict):
-    """LLM decides whether to call a tool or not"""
+def llm_call(state: MessagesState):
+    msg = model_with_tools.invoke([SystemMessage(content="""
+You are an arithmetic agent that performs calculations using tools when necessary.
 
-    return {
-        "messages": [
-            model_with_tools.invoke(
-                [
-                    SystemMessage(
-                        content="You are a helpful assistant tasked with performing arithmetic on a set of inputs."
-                    )
-                ]
-                + state["messages"]
-            )
-        ],
-        "llm_calls": state.get("llm_calls", 0) + 1,
-    }
+Rules:
+1. Do not provide chain-of-thought or step-by-step reasoning.
+2. When calling a tool, output only the required tool call.
+3. Do not describe why you selected the tool.
+""")] + state.messages)
+
+    return MessagesState(messages=[msg], llm_calls=1, tool_calls=0)
 
 
-def tool_node(state: dict):
+def tool_node(state: MessagesState):
     """Performs the tool call"""
 
     result = []
-    for tool_call in state["messages"][-1].tool_calls:
+    tool_called = 0
+    for tool_call in state.messages[-1].tool_calls:
         tool = tools_by_name[tool_call["name"]]
         observation = tool.invoke(tool_call["args"])
         result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
-    return {"messages": result}
+        tool_called += 1
+    return MessagesState(
+        messages=result,
+        llm_calls=0,
+        tool_calls=tool_called,
+    )
 
 
 def should_continue(
@@ -62,7 +63,7 @@ def should_continue(
 ) -> Literal["tool_node", END]:  # pyright: ignore[reportInvalidTypeForm]
     """Decide if we should continue the loop or stop based upon whether the LLM made a tool call"""
 
-    messages = state["messages"]
+    messages = state.messages
     last_message = messages[-1]
 
     # If the LLM makes a tool call, then perform an action
@@ -70,6 +71,7 @@ def should_continue(
         return "tool_node"
 
     # Otherwise, we stop (reply to the user)
+    get_logger().info("No tool calls detected, ending the agent.", state=state)
     return END
 
 
