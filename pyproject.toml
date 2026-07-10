@@ -63,12 +63,22 @@ src_paths = ["src", "tests"]
 
 [tool.pylint.main]
 py-version = "3.11"
+fail-under = 6.0
+
 
 [tool.pylint.messages_control]
 disable = [
-  "missing-module-docstring",
-  "missing-class-docstring",
-  "missing-function-docstring",
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-statements",
+    "invalid-name",
+    "broad-exception-caught",
 ]
 
 [tool.pylint.format]

@@ -4,7 +4,7 @@ from typing import Literal
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 
-from lg_demo.tools import add, divide, multiply
+from lg_demo.utils.tools import add, divide, multiply
 
 from langchain.messages import AnyMessage, ToolMessage
 from typing_extensions import TypedDict, Annotated
