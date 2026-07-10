@@ -79,6 +79,7 @@ disable = [
     "too-many-statements",
     "invalid-name",
     "broad-exception-caught",
+    "redefined-outer-name",
 ]
 
 [tool.pylint.format]
