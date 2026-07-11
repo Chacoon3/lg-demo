@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
 from agent_api.api import agent_api_router
-from agent_api.logging import get_logger
+from agent_api.app_logging import get_logger
+from agent_api.middleware import logging_middleware
 from lg_demo.agent import Agent
 
 
@@ -22,6 +23,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="LG Demo Agent API", version="0.1.0", lifespan=lifespan)
+
+app.middleware("http")(logging_middleware)
 
 
 app.include_router(

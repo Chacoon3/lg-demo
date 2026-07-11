@@ -17,4 +17,5 @@ async def prompt(request: Request, agent: AgentDep):
     prompt = data.get("prompt")
     messages = [HumanMessage(content=prompt)]
     ans = agent.invoke({"messages": messages})
-    return {"answer": ans}
+    last_msg = ans["messages"][-1] if ans["messages"] else None
+    return {"answer": last_msg.content if last_msg else None, "full_response": ans}

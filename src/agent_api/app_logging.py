@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from functools import cache
 import logging
 import sys
+from functools import cache
 from typing import Any
 
 import structlog

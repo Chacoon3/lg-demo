@@ -30,12 +30,11 @@ model_with_tools = model.bind_tools(tools)
 
 def llm_call(state: MessagesState):
     msg = model_with_tools.invoke([SystemMessage(content="""
-You are an arithmetic agent that performs calculations using tools when necessary.
+You are a helpful assistant tasked with performing arithmetic on a set of inputs.
 
 Rules:
-1. Do not provide chain-of-thought or step-by-step reasoning.
-2. When calling a tool, output only the required tool call.
-3. Do not describe why you selected the tool.
+Do not provide chain-of-thought or step-by-step reasoning.
+Do not describe why you selected the tool.
 """)] + state.messages)
 
     return MessagesState(messages=[msg], llm_calls=1, tool_calls=0)
@@ -70,7 +69,6 @@ def should_continue(
     if last_message.tool_calls:
         return "tool_node"
 
-    # Otherwise, we stop (reply to the user)
     get_logger().info("No tool calls detected, ending the agent.", state=state)
     return END
 
