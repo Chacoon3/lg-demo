@@ -15,7 +15,8 @@ async def health_check():
 async def prompt(request: Request, agent: AgentDep):
     data = await request.json()
     prompt = data.get("prompt")
+    is_debug = data.get("debug", False)
     messages = [HumanMessage(content=prompt)]
     ans = agent.invoke({"messages": messages})
-    last_msg = ans["messages"][-1] if ans["messages"] else None
-    return {"answer": last_msg.content if last_msg else None, "full_response": ans}
+    last_msg = ans["messages"][-1].content if ans["messages"] else None
+    return last_msg if not is_debug else ans

@@ -1,22 +1,12 @@
-import operator
 import os
 from typing import Literal
 
-from langchain.messages import AnyMessage, SystemMessage, ToolMessage
+from langchain.messages import SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel
-from structlog import get_logger
-from typing_extensions import Annotated
 
+from lg_demo.utils.states import MessagesState
 from lg_demo.utils.tools import add, divide, multiply
-
-
-class MessagesState(BaseModel):
-    messages: Annotated[list[AnyMessage], operator.add]
-    llm_calls: Annotated[int, operator.add]
-    tool_calls: Annotated[int, operator.add]
-
 
 model = ChatOllama(
     model=os.getenv("MODEL"),
@@ -29,31 +19,35 @@ model_with_tools = model.bind_tools(tools)
 
 
 def llm_call(state: MessagesState):
-    msg = model_with_tools.invoke([SystemMessage(content="""
-You are a helpful assistant tasked with performing arithmetic on a set of inputs.
-
-Rules:
-Do not provide chain-of-thought or step-by-step reasoning.
-Do not describe why you selected the tool.
-""")] + state.messages)
-
-    return MessagesState(messages=[msg], llm_calls=1, tool_calls=0)
+    return MessagesState(
+        messages=[
+            model_with_tools.invoke(
+                [
+                    SystemMessage(
+                        content="You are a helpful assistant tasked with performing arithmetic on a set of inputs.",
+                        think=True,
+                    )
+                ]
+                + state.messages
+            )
+        ],
+        llm_calls=1,
+        tool_calls=state.tool_calls,
+    )
 
 
 def tool_node(state: MessagesState):
     """Performs the tool call"""
 
     result = []
-    tool_called = 0
     for tool_call in state.messages[-1].tool_calls:
         tool = tools_by_name[tool_call["name"]]
         observation = tool.invoke(tool_call["args"])
         result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
-        tool_called += 1
     return MessagesState(
         messages=result,
         llm_calls=0,
-        tool_calls=tool_called,
+        tool_calls=len(result),
     )
 
 
@@ -69,7 +63,7 @@ def should_continue(
     if last_message.tool_calls:
         return "tool_node"
 
-    get_logger().info("No tool calls detected, ending the agent.", state=state)
+    # Otherwise, we stop (reply to the user)
     return END
 
 
