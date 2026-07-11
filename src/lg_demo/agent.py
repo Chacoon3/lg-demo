@@ -1,18 +1,13 @@
-import os
 from typing import Literal
 
 from langchain.messages import SystemMessage, ToolMessage
-from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 
+from lg_demo.inference_provider import HfCloudProvider
 from lg_demo.utils.states import MessagesState
 from lg_demo.utils.tools import add, divide, multiply
 
-model = ChatOllama(
-    model=os.getenv("MODEL"),
-    temperature=0,
-    num_gpu=1,
-)
+model = HfCloudProvider().get_model()
 tools = [add, multiply, divide]
 tools_by_name = {tool.name: tool for tool in tools}
 model_with_tools = model.bind_tools(tools)
