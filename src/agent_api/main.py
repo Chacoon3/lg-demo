@@ -1,7 +1,5 @@
 """FastAPI application entry point."""
 
-import os
-
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
@@ -12,8 +10,6 @@ from lg_demo.agent import Agent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
     get_logger().info("Starting application and configuring model.")
 
     app.state.agent = Agent
