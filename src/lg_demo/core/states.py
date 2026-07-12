@@ -1,9 +1,13 @@
 import operator
-from typing import Annotated
+from typing import Annotated, Protocol
 
 from langchain.messages import AnyMessage
 from langgraph.graph import add_messages
 from pydantic import BaseModel
+
+
+class BaseState(Protocol):
+    messages: Annotated[list[AnyMessage], add_messages]
 
 
 class MessagesState(BaseModel):

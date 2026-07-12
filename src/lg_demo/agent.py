@@ -1,49 +1,23 @@
 from typing import Literal
 
-from langchain.messages import SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
-from lg_demo.core.inference_provider import HfCloudProvider
+import lg_demo.core.inference_provider as inference_provider
+from lg_demo.core.nodes import ArithmeticInferenceNode, ToolNode
 from lg_demo.core.states import MessagesState
 from lg_demo.core.tools import add, divide, multiply
 
-model = HfCloudProvider().get_model()
-tools = [add, multiply, divide]
-tools_by_name = {tool.name: tool for tool in tools}
-model_with_tools = model.bind_tools(tools)
+model = inference_provider.HfCloudProvider().get_model()
+# model = inference_provider.ChatOllamaProvider(
+#     model_name=os.environ["MODEL"], temperature=0.5, num_gpu=1
+# ).get_model()
 
 
-def llm_call(state: MessagesState):
-    return MessagesState(
-        messages=[
-            model_with_tools.invoke(
-                [
-                    SystemMessage(
-                        content="You are a helpful assistant tasked with performing arithmetic on a set of inputs.",
-                        think=True,
-                    )
-                ]
-                + state.messages
-            )
-        ],
-        llm_calls=1,
-        tool_calls=state.tool_calls,
-    )
+tool_node = ToolNode(name="tool_node", tools=[add, multiply, divide])
 
+model_with_tools = model.bind_tools(tool_node.list_tools())
 
-def tool_node(state: MessagesState):
-    """Performs the tool call"""
-
-    result = []
-    for tool_call in state.messages[-1].tool_calls:
-        tool = tools_by_name[tool_call["name"]]
-        observation = tool.invoke(tool_call["args"])
-        result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
-    return MessagesState(
-        messages=result,
-        llm_calls=0,
-        tool_calls=len(result),
-    )
+arith_node = ArithmeticInferenceNode(name="arith_node", model=model_with_tools)
 
 
 def should_continue(
@@ -66,13 +40,13 @@ def should_continue(
 agent_builder = StateGraph(MessagesState)
 
 # Add nodes
-agent_builder.add_node("llm_call", llm_call)
-agent_builder.add_node("tool_node", tool_node)
+agent_builder.add_node(arith_node.name, arith_node)
+agent_builder.add_node(tool_node.name, tool_node)
 
 # Add edges to connect nodes
-agent_builder.add_edge(START, "llm_call")
-agent_builder.add_conditional_edges("llm_call", should_continue, ["tool_node", END])
-agent_builder.add_edge("tool_node", "llm_call")
+agent_builder.add_edge(START, arith_node.name)
+agent_builder.add_conditional_edges(arith_node.name, should_continue, ["tool_node", END])
+agent_builder.add_edge(tool_node.name, arith_node.name)
 
 # Compile the agent
 Agent = agent_builder.compile()

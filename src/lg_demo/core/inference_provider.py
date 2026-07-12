@@ -14,9 +14,9 @@ class InferenceProvider(Protocol):
         return self.__class__.__name__
 
 
-class QwenLocalProvider:
+class ChatOllamaProvider:
 
-    def __init__(self, model_name: str, temperature: float, num_gpu: int):
+    def __init__(self, model_name: str, temperature: float = 0, num_gpu: int = 1):
         model = ChatOllama(
             model=model_name,
             temperature=temperature,
