@@ -29,7 +29,14 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["agent_api.main:app", "--host", "127.0.0.1", "--port", "8000"],
+      "args": [
+        "agent_api.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--reload"
+      ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
