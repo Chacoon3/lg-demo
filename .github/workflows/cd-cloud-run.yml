@@ -54,5 +54,4 @@ jobs:
             --project "$PROJECT_ID" \
             --region "$REGION" \
             --image "$IMAGE_URI" \
-            --platform managed \
-            --allow-unauthenticated
+            --platform managed
