@@ -3,9 +3,9 @@ from typing import Literal
 from langchain.messages import SystemMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph
 
-from lg_demo.inference_provider import HfCloudProvider
-from lg_demo.utils.states import MessagesState
-from lg_demo.utils.tools import add, divide, multiply
+from lg_demo.core.inference_provider import HfCloudProvider
+from lg_demo.core.states import MessagesState
+from lg_demo.core.tools import add, divide, multiply
 
 model = HfCloudProvider().get_model()
 tools = [add, multiply, divide]
