@@ -1,7 +1,4 @@
 from enum import Enum, unique
-from typing import Literal
-
-from langgraph.graph import END, START, StateGraph
 
 import lg_demo.core.inference_provider as inference_provider
 from lg_demo.core.nodes import (
@@ -9,7 +6,8 @@ from lg_demo.core.nodes import (
     PromptClassifierNode,
     ToolNode,
 )
-from lg_demo.core.states import MessagesState
+from lg_demo.core.router import DirectRouter, EntryRouter, ToolCallRouter
+from lg_demo.core.runtime import RuntimeBuilder
 from lg_demo.core.tools import add, divide, multiply, power
 
 
@@ -38,52 +36,19 @@ model = model.bind_tools(tool_set.tools)
 
 arith_node = ArithmeticInferenceNode(name="arith_node", model=model)
 
+entry_router = EntryRouter(entry_node=classifier_node)
 
-def route_classified_prompt(
-    state: MessagesState,
-) -> Literal["arith_node", END]:  # pyright: ignore[reportInvalidTypeForm]
-    """Route the prompt based upon its classification"""
-
-    messages = state.messages
-    last_message = messages[-1]
-
-    classification = last_message.content
-    if classification == PromptType.MATH:
-        return "arith_node"
-    return END
-
-
-def should_continue(
-    state: MessagesState,
-) -> Literal["tool_node", END]:  # pyright: ignore[reportInvalidTypeForm]
-    """Decide if we should continue the loop or stop based upon whether the LLM made a tool call"""
-
-    messages = state.messages
-    last_message = messages[-1]
-
-    # If the LLM makes a tool call, then perform an action
-    if last_message.tool_calls:
-        return "tool_node"
-
-    # Otherwise, we stop (reply to the user)
-    return END
-
-
-# Build workflow
-agent_builder = StateGraph(MessagesState)
-
-# Add nodes
-agent_builder.add_node(arith_node.name, arith_node)
-agent_builder.add_node(tool_set.name, tool_set)
-agent_builder.add_node(classifier_node.name, classifier_node)
-
-# Add edges to connect nodes
-agent_builder.add_edge(START, classifier_node.name)
-agent_builder.add_conditional_edges(
-    classifier_node.name, route_classified_prompt, ["arith_node", END]
+direct_router = DirectRouter(
+    from_nodes=[classifier_node],
+    to_nodes=[arith_node],
 )
-agent_builder.add_conditional_edges(arith_node.name, should_continue, ["tool_node", END])
-agent_builder.add_edge(tool_set.name, arith_node.name)
 
-# Compile the agent
-Agent = agent_builder.compile()
+conditional_tool_call_router = ToolCallRouter(
+    from_nodes=[arith_node],
+    to_nodes=[tool_set],
+)
+
+Agent = RuntimeBuilder(
+    nodes=[classifier_node, tool_set, arith_node],
+    routers=[entry_router, direct_router, conditional_tool_call_router],
+).build()

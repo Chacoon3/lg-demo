@@ -2,35 +2,34 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence
 
-from build.lib.lg_demo.state import MessagesState
 from langchain.chat_models import BaseChatModel
 from langchain.messages import AIMessage, SystemMessage, ToolMessage
 from langchain.tools import BaseTool
 
+from lg_demo.core.states import RuntimeState
+
 
 class BaseNode(ABC):
 
-    def __init__(
-        self,
-        name: str,
-    ):
+    def __init__(self, name: str, priority: int):
         self.name = name
+        self.priority = priority
 
 
 class InferenceNode(BaseNode):
 
     def __init__(self, name: str, model: BaseChatModel):
-        super().__init__(name)
+        super().__init__(name, priority=1)
         self.model: BaseChatModel = model
 
     @abstractmethod
-    def __call__(self, state: MessagesState) -> MessagesState: ...
+    def __call__(self, state: RuntimeState) -> RuntimeState: ...
 
 
 class ToolNode(BaseNode):
 
     def __init__(self, name: str, tools: Sequence[BaseTool]):
-        super().__init__(name)
+        super().__init__(name, priority=0)
         self.tools = list(tools)
         self.registry: dict = {tool.name: tool for tool in tools}
 
@@ -40,13 +39,13 @@ class ToolNode(BaseNode):
     def list_tools(self) -> Sequence[BaseTool]:
         return self.tools
 
-    def __call__(self, state: MessagesState) -> MessagesState:
+    def __call__(self, state: RuntimeState) -> RuntimeState:
         result = []
         for tool_call in state.messages[-1].tool_calls:
             tool = self.get_tool(tool_call["name"])
             observation = tool.invoke(tool_call["args"])
             result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
-        return MessagesState(
+        return RuntimeState(
             messages=result,
             llm_calls=0,
             tool_calls=len(result),
@@ -58,9 +57,9 @@ class ToolNode(BaseNode):
 
 class ArithmeticInferenceNode(InferenceNode):
 
-    def __call__(self, state: MessagesState) -> MessagesState:
+    def __call__(self, state: RuntimeState) -> RuntimeState:
         # Implement the arithmetic inference logic here
-        return MessagesState(
+        return RuntimeState(
             messages=[self.model.invoke([SystemMessage(content="""
 You are an assistant tasked with performing arithmetic on a set of inputs.
 Use tools when necessary.
@@ -79,7 +78,7 @@ class PromptClassifierNode(InferenceNode):
         self.model = model.with_structured_output(prompt_class)
         self._class_members = list(prompt_class)
 
-    def __call__(self, state: MessagesState) -> MessagesState:
+    def __call__(self, state: RuntimeState) -> RuntimeState:
 
         resp = self.model.invoke([SystemMessage(content=f"""
 You are an assistant tasked with classifying prompts into one of the categories:
@@ -87,7 +86,7 @@ You are an assistant tasked with classifying prompts into one of the categories:
 """)] + state.messages)
 
         wrapped_msg = AIMessage(content=resp["value"])
-        return MessagesState(
+        return RuntimeState(
             messages=[wrapped_msg],
             llm_calls=1,
             tool_calls=0,

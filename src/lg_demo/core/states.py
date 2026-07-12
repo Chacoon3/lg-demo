@@ -10,7 +10,7 @@ class BaseState(Protocol):
     messages: Annotated[list[AnyMessage], add_messages]
 
 
-class MessagesState(BaseModel):
+class RuntimeState(BaseModel):
     messages: Annotated[list[AnyMessage], add_messages]
     llm_calls: Annotated[int, operator.add]
     tool_calls: Annotated[int, operator.add]
