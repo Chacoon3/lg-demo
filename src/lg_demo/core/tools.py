@@ -33,3 +33,14 @@ def divide(a: int, b: int) -> float:
         b: Second int
     """
     return a / b
+
+
+@tool
+def power(a: int, b: float) -> float:
+    """Raise `a` to the power of `b`.
+
+    Args:
+        a: Base integer
+        b: Exponent
+    """
+    return a**b
