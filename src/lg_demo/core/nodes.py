@@ -87,7 +87,7 @@ class PlannerNode(InferenceNode):
     def __call__(self, state: RuntimeState) -> RuntimeState:
         return RuntimeState(
             messages=[self.model.invoke([SystemMessage(content="""
-You are an assistant tasked with planning a sequence of tasks based on the given input.
+You are a generalist to break down complex tasks into a sequence of actionable steps for further processing.
 """)] + state.messages)],
             llm_calls=1,
             tool_calls=0,

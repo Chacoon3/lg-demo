@@ -4,13 +4,14 @@ from fastapi import APIRouter, Request, Response
 from langchain.messages import HumanMessage
 
 from agent_api.dependencies import FinanceAgentDep, GeneralAgentDep
+from agent_api.response_builder import response_ok
 
 agent_api_router = APIRouter(prefix="/prompt")
 
 
 @agent_api_router.get("/health_check")
 async def health_check():
-    return {"status": "ok"}
+    return response_ok({"status": "ok"})
 
 
 @agent_api_router.get("/graph", response_class=Response)
@@ -32,7 +33,7 @@ async def general(request: Request, agent: GeneralAgentDep):
     messages = [HumanMessage(content=prompt)]
     ans = agent.invoke({"messages": messages})
     last_msg = ans["messages"][-1].content if ans["messages"] else None
-    return last_msg if not is_debug else ans
+    return response_ok(last_msg if not is_debug else ans)
 
 
 @agent_api_router.post("/finance")
@@ -43,4 +44,9 @@ async def finance(request: Request, agent: FinanceAgentDep):
     messages = [HumanMessage(content=prompt)]
     ans = agent.invoke({"messages": messages})
     last_msg = ans["messages"][-1].content if ans["messages"] else None
-    return last_msg if not is_debug else ans
+    return response_ok(last_msg if not is_debug else ans)
+
+
+@agent_api_router.post("/planned_finance")
+async def planned_finance(request: Request, agent: FinanceAgentDep):
+    pass

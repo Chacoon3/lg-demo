@@ -25,7 +25,12 @@ class FakeAgent:
 
 def test_health_check_returns_ok_status():
     result = asyncio.run(health_check())
-    assert result == {"status": "ok"}
+    assert result == {
+        "success": True,
+        "data": {"status": "ok"},
+        "error": None,
+        "meta": {},
+    }
 
 
 def test_prompt_returns_last_message_content_when_not_debug():
@@ -34,7 +39,12 @@ def test_prompt_returns_last_message_content_when_not_debug():
 
     result = asyncio.run(general(request, agent))
 
-    assert result == "answer"
+    assert result == {
+        "success": True,
+        "data": "answer",
+        "error": None,
+        "meta": {},
+    }
     assert agent.calls[0]["messages"][0].content == "hello"
 
 
@@ -45,7 +55,12 @@ def test_prompt_returns_full_response_when_debug_enabled():
 
     result = asyncio.run(general(request, agent))
 
-    assert result == response
+    assert result == {
+        "success": True,
+        "data": response,
+        "error": None,
+        "meta": {},
+    }
 
 
 def test_prompt_returns_none_when_no_messages():
@@ -54,4 +69,9 @@ def test_prompt_returns_none_when_no_messages():
 
     result = asyncio.run(general(request, agent))
 
-    assert result is None
+    assert result == {
+        "success": True,
+        "data": None,
+        "error": None,
+        "meta": {},
+    }
