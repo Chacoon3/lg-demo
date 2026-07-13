@@ -32,8 +32,12 @@ class ChatOllamaProvider(ModelProvider):
     def _get_model_key(self) -> str:
         return f"{self.model_name}-{self.temperature}-{self.num_gpu}"
 
-    def __init__(self, model_name: str, temperature: float = 0, num_gpu: int = 1):
-        self.model_name = model_name
+    def __init__(self, model_name: str = None, temperature: float = 0, num_gpu: int = 1):
+        self.model_name = model_name or os.environ.get("MODEL")
+        if not self.model_name:
+            raise ValueError(
+                "Model name must be provided either as an argument or through the MODEL environment variable."
+            )
         self.temperature = temperature
         self.num_gpu = num_gpu
 

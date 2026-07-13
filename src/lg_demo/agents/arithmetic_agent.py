@@ -14,9 +14,7 @@ class ArithmeticInferenceNode(InferenceNode):
         # Implement the arithmetic inference logic here
         return RuntimeState(
             messages=[self.model.invoke([SystemMessage(content="""
-    You are an assistant tasked with performing arithmetic on a set of inputs.
-    Use tools when necessary.
-    Return the arithmetic result itself without any additional text.
+    You are an assistant to answer arithmetic questions.
                                 """)] + state.messages)],
             llm_calls=1,
             tool_calls=0,
@@ -25,11 +23,12 @@ class ArithmeticInferenceNode(InferenceNode):
 
 def build_simple_arithmetic_agent():
 
-    hf_cloud_model = model_provider.HfCloudProvider().get_model()
+    # model = model_provider.HfCloudProvider().get_model()
+    model = model_provider.ChatOllamaProvider().get_model()
     math_tool = ToolNode(name="tool_node", tools=[add, multiply, divide, power])
-    local_model = hf_cloud_model.bind_tools(math_tool.tools)
+    model = model.bind_tools(math_tool.tools)
 
-    arith_node = ArithmeticInferenceNode(name="arith_node", model=local_model)
+    arith_node = ArithmeticInferenceNode(name="arith_node", model=model)
 
     entry_router = EntryRouter(entry_node=arith_node)
 

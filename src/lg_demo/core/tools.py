@@ -4,11 +4,16 @@ from typing import Literal
 
 from langchain.tools import tool
 from langchain_tavily import TavilySearch
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ArithmeticOperation(BaseModel):
+    a: int = Field(..., description="First number")
+    b: int = Field(..., description="Second number")
 
 
 # Define tools
-@tool
+@tool(args_schema=ArithmeticOperation, description="Multiply two numbers")
 def multiply(a: int, b: int) -> int:
     """Multiply `a` and `b`.
 
@@ -19,7 +24,7 @@ def multiply(a: int, b: int) -> int:
     return a * b
 
 
-@tool
+@tool(args_schema=ArithmeticOperation, description="Add two numbers")
 def add(a: int, b: int) -> int:
     """Adds `a` and `b`.
 
@@ -30,7 +35,7 @@ def add(a: int, b: int) -> int:
     return a + b
 
 
-@tool
+@tool(args_schema=ArithmeticOperation, description="Divide two numbers")
 def divide(a: int, b: int) -> float:
     """Divide `a` and `b`.
 
@@ -41,7 +46,7 @@ def divide(a: int, b: int) -> float:
     return a / b
 
 
-@tool
+@tool(args_schema=ArithmeticOperation, description="Raise a number to the power of another number")
 def power(a: int, b: float) -> float:
     """Raise `a` to the power of `b`.
 

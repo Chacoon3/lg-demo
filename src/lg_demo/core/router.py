@@ -36,6 +36,7 @@ class ConditionalRouter(BaseRouter):
         self.from_nodes = from_nodes
         self.to_nodes = to_nodes
         self.exit_set: set[str] = set(n.name for n in to_nodes)
+        self.exit_set.add(self.END)
 
 
 class PromptClassRouter(ConditionalRouter):
@@ -55,4 +56,6 @@ class ToolCallRouter(ConditionalRouter):
             tool_name = last_message.tool_calls[-1]["name"]
             if tool_name in self.exit_set:
                 return tool_name
+            else:
+                raise ValueError(f"Tool call '{tool_name}' is not in the exit set")
         return self.END
