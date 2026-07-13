@@ -8,9 +8,9 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 
-class InferenceProvider(ABC):
+class ModelProvider(ABC):
 
-    __MODEL_REGISTRY: dict[str, InferenceProvider] = {}
+    __MODEL_REGISTRY: dict[str, ModelProvider] = {}
 
     @abstractmethod
     def _get_model_key(self) -> str: ...
@@ -27,7 +27,7 @@ class InferenceProvider(ABC):
         return model
 
 
-class ChatOllamaProvider(InferenceProvider):
+class ChatOllamaProvider(ModelProvider):
 
     def _get_model_key(self) -> str:
         return f"{self.model_name}-{self.temperature}-{self.num_gpu}"
@@ -45,7 +45,7 @@ class ChatOllamaProvider(InferenceProvider):
         )
 
 
-class HfCloudProvider(InferenceProvider):
+class HfCloudProvider(ModelProvider):
 
     def _get_model_key(self) -> str:
         return f"{self.model_name}"

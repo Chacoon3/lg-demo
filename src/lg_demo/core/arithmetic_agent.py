@@ -1,6 +1,6 @@
 from langchain.messages import SystemMessage
 
-from lg_demo.core import inference_provider
+from lg_demo.core import model_provider
 from lg_demo.core.nodes import InferenceNode, ToolNode
 from lg_demo.core.router import EntryRouter, ToolCallRouter
 from lg_demo.core.runtime import RuntimeBuilder
@@ -25,7 +25,7 @@ class ArithmeticInferenceNode(InferenceNode):
 
 def build_simple_arithmetic_agent():
 
-    hf_cloud_model = inference_provider.HfCloudProvider().get_model()
+    hf_cloud_model = model_provider.HfCloudProvider().get_model()
     math_tool = ToolNode(name="tool_node", tools=[add, multiply, divide, power])
     local_model = hf_cloud_model.bind_tools(math_tool.tools)
 

@@ -1,13 +1,13 @@
 import pytest
 
-from lg_demo.core.inference_provider import ChatOllamaProvider, HfCloudProvider
+from lg_demo.core.model_provider import ChatOllamaProvider, HfCloudProvider
 
 
 @pytest.fixture(autouse=True)
 def reset_model_registry():
-    import lg_demo.core.inference_provider as module
+    import lg_demo.core.model_provider as module
 
-    module.InferenceProvider._InferenceProvider__MODEL_REGISTRY.clear()
+    module.ModelProvider._ModelProvider__MODEL_REGISTRY.clear()
 
 
 def test_chat_ollama_provider_builds_model_with_given_params(monkeypatch):
@@ -17,7 +17,7 @@ def test_chat_ollama_provider_builds_model_with_given_params(monkeypatch):
         def __init__(self, **kwargs):
             captured.update(kwargs)
 
-    import lg_demo.core.inference_provider as module
+    import lg_demo.core.model_provider as module
 
     monkeypatch.setattr(module, "ChatOllama", FakeChatOllama)
 
@@ -34,7 +34,7 @@ def test_hf_cloud_provider_builds_openai_client_with_hf_router(monkeypatch):
         def __init__(self, **kwargs):
             captured.update(kwargs)
 
-    import lg_demo.core.inference_provider as module
+    import lg_demo.core.model_provider as module
 
     monkeypatch.setattr(module, "ChatOpenAI", FakeChatOpenAI)
     monkeypatch.setenv("HF_TOKEN", "test-token")
