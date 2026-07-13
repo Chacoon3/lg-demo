@@ -77,7 +77,6 @@ _tavily = TavilySearch(
 @tool
 def web_search(
     query: str,
-    max_results: int = 5,
     topic: Literal["general", "news", "finance"] = "general",
     time_range: Literal["day", "week", "month", "year"] | None = None,
     include_domains: list[str] | None = None,
@@ -116,15 +115,12 @@ def web_search(
             ensure_ascii=False,
         )
 
-    max_results = max(1, min(max_results, 10))
-
     try:
         # Some parameters may be overridden at invocation time.
         response = _tavily.invoke(
             {
                 "query": query,
                 "topic": topic,
-                "max_results": max_results,
                 "time_range": time_range,
                 "include_domains": include_domains or [],
                 "exclude_domains": exclude_domains or [],
@@ -136,6 +132,9 @@ def web_search(
         if isinstance(response, str):
             response = json.loads(response)
 
+        if response.get("error"):
+            raise RuntimeError(response.get("error"))
+
         normalized = WebSearchResponse(
             query=response.get("query", query),
             answer=response.get("answer"),
@@ -145,7 +144,7 @@ def web_search(
                     url=item.get("url", ""),
                     content=item.get("content", ""),
                 )
-                for item in response.get("results", [])[:max_results]
+                for item in response.get("results", [])
             ],
         )
 

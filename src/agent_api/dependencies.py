@@ -8,7 +8,16 @@ def get_agent(request: Request):
     return request.app.state.agent
 
 
-AgentDep = Annotated[
+def get_finance_agent(request: Request):
+    return request.app.state.finance_agent
+
+
+GeneralAgentDep = Annotated[
     BaseChatModel,
     Depends(get_agent),
+]
+
+FinanceAgentDep = Annotated[
+    BaseChatModel,
+    Depends(get_finance_agent),
 ]

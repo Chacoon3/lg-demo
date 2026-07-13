@@ -7,6 +7,7 @@ from agent_api.api import agent_api_router
 from agent_api.app_logging import get_logger
 from agent_api.middleware import logging_middleware
 from lg_demo.agents.arithmetic_agent import build_simple_arithmetic_agent
+from lg_demo.agents.trading_agent import build_trading_agent
 
 
 @asynccontextmanager
@@ -14,6 +15,7 @@ async def lifespan(app: FastAPI):
     get_logger().info("Starting application and configuring model.")
 
     app.state.agent = build_simple_arithmetic_agent()
+    app.state.finance_agent = build_trading_agent()
 
     get_logger().info("Model and tools have been configured.")
 
