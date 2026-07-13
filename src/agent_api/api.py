@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request
+from typing import Literal
+
+from fastapi import APIRouter, Request, Response
 from langchain.messages import HumanMessage, SystemMessage
 
 from agent_api.dependencies import FinanceAgentDep, GeneralAgentDep
@@ -9,6 +11,17 @@ agent_api_router = APIRouter(prefix="/prompt")
 @agent_api_router.get("/health_check")
 async def health_check():
     return {"status": "ok"}
+
+
+@agent_api_router.get("/graph", response_class=Response)
+async def graph(request: Request, agent_class: Literal["general", "finance"]):
+    agent_map = {
+        "general": request.app.state.agent,
+        "finance": request.app.state.finance_agent,
+    }
+    agt = agent_map.get(agent_class)
+    graph_png = agt.get_graph().draw_mermaid_png()
+    return Response(content=graph_png, media_type="image/png")
 
 
 @agent_api_router.post("/general")

@@ -26,3 +26,5 @@ build/
 build/
 
 .coverage*
+
+.cache/

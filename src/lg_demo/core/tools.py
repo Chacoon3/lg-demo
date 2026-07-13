@@ -6,6 +6,8 @@ from langchain.tools import tool
 from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 
+from lg_demo.utils.caching import AppDiskCache
+
 
 class ArithmeticOperation(BaseModel):
     a: int = Field(..., description="First number")
@@ -65,8 +67,9 @@ class WebSearchResult(BaseModel):
 
 class WebSearchResponse(BaseModel):
     query: str
-    results: list[WebSearchResult]
+    results: list[WebSearchResult] | None = None
     answer: str | None = None
+    error: str | None = None
 
 
 _tavily = TavilySearch(
@@ -79,14 +82,15 @@ _tavily = TavilySearch(
 )
 
 
-@tool
+@tool(description="Search the public web for current or external information")
+@AppDiskCache.wrap
 def web_search(
     query: str,
     topic: Literal["general", "news", "finance"] = "general",
     time_range: Literal["day", "week", "month", "year"] | None = None,
     include_domains: list[str] | None = None,
     exclude_domains: list[str] | None = None,
-) -> str:
+) -> WebSearchResponse:
     """Search the public web for current or external information.
 
     Use this tool when the answer depends on information that may have changed,
@@ -105,19 +109,16 @@ def web_search(
         and normalized search results with title, URL, and content.
     """
     if not os.getenv("TAVILY_API_KEY"):
-        return json.dumps(
-            {
-                "error": "TAVILY_API_KEY is not configured",
-                "query": query,
-            },
-            ensure_ascii=False,
+        return WebSearchResponse(
+            query=query,
+            error="TAVILY_API_KEY is not configured",
         )
 
     query = query.strip()
     if not query:
-        return json.dumps(
-            {"error": "query must not be empty"},
-            ensure_ascii=False,
+        return WebSearchResponse(
+            query=query,
+            error="query must not be empty",
         )
 
     try:
@@ -153,13 +154,10 @@ def web_search(
             ],
         )
 
-        return normalized.model_dump_json()
+        return normalized
 
     except Exception as exc:
-        return json.dumps(
-            {
-                "error": f"web search failed: {type(exc).__name__}: {exc}",
-                "query": query,
-            },
-            ensure_ascii=False,
+        return WebSearchResponse(
+            query=query,
+            error=f"web search failed: {type(exc).__name__}: {exc}",
         )
