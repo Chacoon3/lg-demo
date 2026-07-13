@@ -3,6 +3,13 @@ import pytest
 from lg_demo.core.inference_provider import ChatOllamaProvider, HfCloudProvider
 
 
+@pytest.fixture(autouse=True)
+def reset_model_registry():
+    import lg_demo.core.inference_provider as module
+
+    module.InferenceProvider._InferenceProvider__MODEL_REGISTRY.clear()
+
+
 def test_chat_ollama_provider_builds_model_with_given_params(monkeypatch):
     captured = {}
 
@@ -42,6 +49,7 @@ def test_hf_cloud_provider_builds_openai_client_with_hf_router(monkeypatch):
 
 def test_hf_cloud_provider_raises_when_hf_token_missing(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
+    provider = HfCloudProvider()
 
     with pytest.raises(KeyError):
-        HfCloudProvider()
+        provider.get_model()

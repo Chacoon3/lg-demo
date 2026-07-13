@@ -1,8 +1,12 @@
+import os
 from enum import Enum
 
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
 
-from lg_demo.core.nodes import ArithmeticInferenceNode, PromptClassifierNode, ToolNode
+os.environ.setdefault("TAVILY_API_KEY", "test-key")
+
+from lg_demo.core.arithmetic_agent import ArithmeticInferenceNode
+from lg_demo.core.nodes import PromptClassifierNode, ToolNode
 from lg_demo.core.states import RuntimeState
 
 

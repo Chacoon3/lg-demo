@@ -6,14 +6,14 @@ from fastapi.concurrency import asynccontextmanager
 from agent_api.api import agent_api_router
 from agent_api.app_logging import get_logger
 from agent_api.middleware import logging_middleware
-from lg_demo.agent import Agent
+from lg_demo.core.arithmetic_agent import build_simple_arithmetic_agent
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     get_logger().info("Starting application and configuring model.")
 
-    app.state.agent = Agent
+    app.state.agent = build_simple_arithmetic_agent()
 
     get_logger().info("Model and tools have been configured.")
 

@@ -6,7 +6,7 @@ from langchain.chat_models import BaseChatModel
 from langchain.messages import AIMessage, SystemMessage, ToolMessage
 from langchain.tools import BaseTool
 
-from lg_demo.core.states import RuntimeState
+from lg_demo.core.states import AgentPlan, RuntimeState
 
 
 class BaseNode(ABC):
@@ -55,21 +55,6 @@ class ToolNode(BaseNode):
         return model.bind_tools(self.tools)
 
 
-class ArithmeticInferenceNode(InferenceNode):
-
-    def __call__(self, state: RuntimeState) -> RuntimeState:
-        # Implement the arithmetic inference logic here
-        return RuntimeState(
-            messages=[self.model.invoke([SystemMessage(content="""
-You are an assistant tasked with performing arithmetic on a set of inputs.
-Use tools when necessary.
-Return the arithmetic result itself without any additional text.
-                            """)] + state.messages)],
-            llm_calls=1,
-            tool_calls=0,
-        )
-
-
 class PromptClassifierNode(InferenceNode):
 
     def __init__(self, name, model: BaseChatModel, prompt_class: type[Enum]):
@@ -88,6 +73,22 @@ You are an assistant tasked with classifying prompts into one of the categories:
         wrapped_msg = AIMessage(content=resp["value"])
         return RuntimeState(
             messages=[wrapped_msg],
+            llm_calls=1,
+            tool_calls=0,
+        )
+
+
+class PlannerNode(InferenceNode):
+
+    def __init__(self, name, model: BaseChatModel):
+        super().__init__(name, model)
+        self.model = model.with_structured_output(AgentPlan)
+
+    def __call__(self, state: RuntimeState) -> RuntimeState:
+        return RuntimeState(
+            messages=[self.model.invoke([SystemMessage(content="""
+You are an assistant tasked with planning a sequence of tasks based on the given input.
+""")] + state.messages)],
             llm_calls=1,
             tool_calls=0,
         )
