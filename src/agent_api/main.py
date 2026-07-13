@@ -6,7 +6,7 @@ from fastapi.concurrency import asynccontextmanager
 from agent_api.api import agent_api_router
 from agent_api.app_logging import get_logger
 from agent_api.middleware import logging_middleware
-from lg_demo.core.arithmetic_agent import build_simple_arithmetic_agent
+from lg_demo.agents.arithmetic_agent import build_simple_arithmetic_agent
 
 
 @asynccontextmanager
