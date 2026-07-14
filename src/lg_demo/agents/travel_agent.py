@@ -1,12 +1,14 @@
-from langchain.messages import SystemMessage
+from langchain.chat_models import BaseChatModel
+from langchain.messages import AIMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
-from lg_demo.core.model_provider import HfCloudProvider
+from agent_api.app_logging import get_logger
 from lg_demo.core.nodes import InferenceNode, ToolNode
-from lg_demo.core.router import EntryRouter, ToolCallRouter
+from lg_demo.core.router import DirectRouter, EntryRouter, ToolCallRouter
 from lg_demo.core.runtime import RuntimeBuilder
 from lg_demo.core.states import AgentPlan, RuntimeState
 from lg_demo.core.tools import web_search
+from lg_demo.utils.caching import AppDiskCache
 from lg_demo.utils.dag import Dag
 
 
@@ -16,16 +18,20 @@ class TravelPlannerNode(InferenceNode):
         model = model.with_structured_output(AgentPlan)
         super().__init__(name, model)
 
+    @AppDiskCache.wrap
     def __call__(self, state: RuntimeState) -> RuntimeState:
+        msg: AgentPlan = self.model.invoke([SystemMessage(content="""
+Come up with a list of tasks that break down the user's request into actionable steps.
+Give each task a concise and unique name and put the task instruction in the "description" field.
+If a task depends on any other tasks, put the other tasks' names in the "dependencies" field.
+""")] + state.messages)
 
+        plan_json = msg.model_dump_json()
+
+        dag = Dag(msg.tasks)
+        get_logger().debug("agent_plan", plan_json=plan_json)
         return RuntimeState(
-            messages=[self.model.invoke([SystemMessage(content="""
-Based on user request, come up with a list of tasks that break down the request into actionable steps.
-Represent the steps as a directed acyclic graph (DAG).
-The instruction of the task should be given in the description field of each AgentTask object.
-""")] + state.messages)],
-            llm_calls=1,
-            tool_calls=0,
+            messages=[AIMessage(content=plan_json)], llm_calls=1, tool_calls=0, state={"dag": dag}
         )
 
 
@@ -51,8 +57,7 @@ Your task is to execute the task given to you.
             return RuntimeState(messages=msg_history, llm_calls=1, tool_calls=0, state={"dag": dag})
 
 
-def build_travel_agent() -> CompiledStateGraph:
-    model = HfCloudProvider().get_model()
+def build_travel_agent(model: BaseChatModel) -> CompiledStateGraph:
     tools = ToolNode(name="travel_tools", tools=[web_search])  # Replace with actual tools as needed
 
     model = model.bind_tools(tools.tools)
@@ -64,10 +69,11 @@ def build_travel_agent() -> CompiledStateGraph:
         from_nodes=[planner_node, action_node],
         to_nodes=[tools],
     )
+    action_route = DirectRouter(from_nodes=[planner_node], to_nodes=[action_node])
 
     agent = RuntimeBuilder(
         nodes=[planner_node, tools, action_node],
-        routers=[entry_route, tool_call_router],
+        routers=[entry_route, tool_call_router, action_route],
     ).build()
 
     return agent

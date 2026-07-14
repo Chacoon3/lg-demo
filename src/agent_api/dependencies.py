@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
-from lg_demo.agents import _AgentRegistry
+from lg_demo.agents import AgentRegistry
 
 
 def agent_registry(request: Request):
@@ -10,6 +10,6 @@ def agent_registry(request: Request):
 
 
 AgentRegistryDep = Annotated[
-    _AgentRegistry,
+    AgentRegistry,
     Depends(agent_registry),
 ]

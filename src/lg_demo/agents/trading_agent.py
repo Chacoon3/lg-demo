@@ -1,7 +1,7 @@
+from langchain.chat_models import BaseChatModel
 from langchain.messages import SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
-from lg_demo.core.model_provider import HfCloudProvider
 from lg_demo.core.nodes import InferenceNode, ToolNode
 from lg_demo.core.router import DirectRouter, EntryRouter, ToolCallRouter
 from lg_demo.core.runtime import RuntimeBuilder
@@ -31,8 +31,7 @@ Your task is to summarize the structured JSON output and convert it into human-r
         )
 
 
-def build_trading_agent() -> CompiledStateGraph:
-    model = HfCloudProvider().get_model()
+def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph:
     tools = ToolNode(
         name="trading_tools", tools=[web_search]
     )  # Replace with actual tools as needed

@@ -1,7 +1,7 @@
+from langchain.chat_models import BaseChatModel
 from langchain.messages import SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
-from lg_demo.core import model_provider
 from lg_demo.core.nodes import InferenceNode, ToolNode
 from lg_demo.core.router import EntryRouter, ToolCallRouter
 from lg_demo.core.runtime import RuntimeBuilder
@@ -22,10 +22,7 @@ class ArithmeticInferenceNode(InferenceNode):
         )
 
 
-def build_simple_arithmetic_agent() -> CompiledStateGraph:
-
-    # model = model_provider.HfCloudProvider().get_model()
-    model = model_provider.ChatOllamaProvider().get_model()
+def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph:
     math_tool = ToolNode(name="tool_node", tools=[add, multiply, divide, power])
     model = model.bind_tools(math_tool.tools)
 

@@ -11,9 +11,12 @@ class Dag:
         self.tasks = tasks
         self.graph = nx.DiGraph()
         for task in tasks:
-            self.graph.add_node(task.task_id, task=task)
+            self.graph.add_node(task.name, task=task)
             for dep in task.dependencies:
-                self.graph.add_edge(dep, task.task_id)
+                self.graph.add_edge(dep, task.name)
+
+    def __repr__(self):
+        return f"Dag(tasks={[task.name for task in self.tasks]})"
 
     def __iter__(self) -> Generator[AgentTask, None, None]:
         return (self.graph.nodes[node]["task"] for node in nx.topological_sort(self.graph))
