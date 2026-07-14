@@ -1,4 +1,5 @@
 from langchain.messages import SystemMessage
+from langgraph.graph.state import CompiledStateGraph
 
 from lg_demo.core import model_provider
 from lg_demo.core.nodes import InferenceNode, ToolNode
@@ -21,7 +22,7 @@ class ArithmeticInferenceNode(InferenceNode):
         )
 
 
-def build_simple_arithmetic_agent():
+def build_simple_arithmetic_agent() -> CompiledStateGraph:
 
     # model = model_provider.HfCloudProvider().get_model()
     model = model_provider.ChatOllamaProvider().get_model()

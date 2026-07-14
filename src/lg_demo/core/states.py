@@ -14,14 +14,21 @@ class RuntimeState(BaseModel):
     messages: Annotated[list[AnyMessage], add_messages]
     llm_calls: Annotated[int, operator.add]
     tool_calls: Annotated[int, operator.add]
+    state: Annotated[dict, operator.or_]
+
+
+class AgentTaskDependency(BaseModel):
+    predecessor_id: Optional[uuid.UUID]
+    successor_id: uuid.UUID
 
 
 class AgentTask(BaseModel):
+    task_type: Literal["tool_call", "inference"]
     name: str
     task_id: uuid.UUID
     description: str | None = None
-    task_type: Literal["tool_call", "inference"]
     dependencies: list[uuid.UUID] = []
+    status: Literal["pending", "in_progress", "completed", "failed"] = "pending"
 
     @cached_property
     def get_dependencies(self) -> list[AgentTaskDependency]:
@@ -31,11 +38,6 @@ class AgentTask(BaseModel):
                 for dep in self.dependencies
             ]
         return [AgentTaskDependency(predecessor_id=None, successor_id=self.task_id)]
-
-
-class AgentTaskDependency(BaseModel):
-    predecessor_id: Optional[uuid.UUID]
-    successor_id: uuid.UUID
 
 
 class AgentPlan(BaseModel):
