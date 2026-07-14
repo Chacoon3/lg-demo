@@ -28,3 +28,4 @@ build/
 .coverage*
 
 .cache/
+.local_files/
