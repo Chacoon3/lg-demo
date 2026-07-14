@@ -54,5 +54,6 @@ async def travel(request: Request, agent_registry: AgentRegistryDep):
     is_debug = data.get("debug", False)
     messages = [HumanMessage(content=prompt)]
     ans = agent_registry.travel_agent.invoke({"messages": messages})
+    ans.pop("state")
     last_msg = ans["messages"][-1].content if ans["messages"] else None
     return response_ok(last_msg if not is_debug else ans)

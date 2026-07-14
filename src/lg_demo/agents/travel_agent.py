@@ -21,7 +21,7 @@ class TravelPlannerNode(InferenceNode):
     @AppDiskCache.wrap
     def __call__(self, state: RuntimeState) -> RuntimeState:
         msg: AgentPlan = self.model.invoke([SystemMessage(content="""
-Come up with a list of tasks that break down the user's request into actionable steps.
+Solve the user's problem by breaking it down into a series of actionable tasks.
 Give each task a concise and unique name and put the task instruction in the "description" field.
 If a task depends on any other tasks, put the other tasks' names in the "dependencies" field.
 """)] + state.messages)
@@ -59,17 +59,13 @@ Execute the task given to you.
             task_output[task.name] = resp.content
             task.status = "completed"
 
-        summerize_msg = state.messages + [
-            SystemMessage(content=f"Summary of task outputs: {task_output}")
-        ]
-
         task_output_string = "\n".join(
             f"{task_name}: {output}" for task_name, output in task_output.items()
         )
-        summerize_msg.append(HumanMessage(content=f"""
+        summerize_msg = [SystemMessage(content=f"""
 Please summarize the task outputs and generate an answer to the user's request.
 {task_output_string}
-                """))
+                """)]
 
         summary = self.model.invoke(summerize_msg)
 

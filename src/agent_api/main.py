@@ -22,7 +22,7 @@ from lg_demo.agents import AgentRegistry
 async def lifespan(app: FastAPI):
     get_logger().info("Starting application and configuring model.")
 
-    app.state.agent_registry = AgentRegistry(model_provider.OpenAICloudProvider().get_model())
+    app.state.agent_registry = AgentRegistry(model_provider.ChatOllamaProvider().get_model())
 
     get_logger().info("Model and tools have been configured.")
 

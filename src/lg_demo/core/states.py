@@ -6,14 +6,14 @@ from typing import Annotated, Any, Literal, Optional
 
 from langchain.messages import AnyMessage
 from langgraph.graph import add_messages
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RuntimeState(BaseModel):
     messages: Annotated[list[AnyMessage], add_messages]
     llm_calls: Annotated[int, operator.add]
     tool_calls: Annotated[int, operator.add]
-    state: Annotated[dict[str, Any] | None, operator.or_] = None
+    state: Annotated[dict[str, Any] | None, operator.or_] = Field(None, exclude=True)
 
 
 class AgentTaskDependency(BaseModel):
