@@ -1,5 +1,5 @@
 from langchain.chat_models import BaseChatModel
-from langchain.messages import AIMessage, SystemMessage
+from langchain.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
 from agent_api.app_logging import get_logger
@@ -39,22 +39,43 @@ class TravelActionNode(InferenceNode):
 
     def __call__(self, state: RuntimeState) -> RuntimeState:
         sys_msg = SystemMessage(content="""
-Your task is to execute the task given to you.
+Execute the task given to you.
 """)
 
         dag: Dag = state.state.get("dag", [])
         if not dag:
             raise ValueError("No task DAG found in the state.")
 
-        msg_history = [sys_msg] + state.messages
+        msg_history = [sys_msg]
+        llm_call = 0
+        task_output = {}
         for task in dag:
-            if task.status == "completed":
-                continue
-            msg_history.append(SystemMessage(content=f"Process the task: {task.description}"))
+            llm_call += 1
+            msg_history.append(
+                HumanMessage(content=f"Process the task {task.name}: {task.description}")
+            )
             resp = self.model.invoke(msg_history)
-            msg_history.append(resp)
+            msg_history.pop()
+            task_output[task.name] = resp.content
             task.status = "completed"
-            return RuntimeState(messages=msg_history, llm_calls=1, tool_calls=0, state={"dag": dag})
+
+        summerize_msg = state.messages + [
+            SystemMessage(content=f"Summary of task outputs: {task_output}")
+        ]
+
+        task_output_string = "\n".join(
+            f"{task_name}: {output}" for task_name, output in task_output.items()
+        )
+        summerize_msg.append(HumanMessage(content=f"""
+Please summarize the task outputs and generate an answer to the user's request.
+{task_output_string}
+                """))
+
+        summary = self.model.invoke(summerize_msg)
+
+        return RuntimeState(
+            messages=msg_history + [summary], llm_calls=llm_call, tool_calls=0, state={"dag": dag}
+        )
 
 
 def build_travel_agent(model: BaseChatModel) -> CompiledStateGraph:

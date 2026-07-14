@@ -18,6 +18,9 @@ class Dag:
     def __repr__(self):
         return f"Dag(tasks={[task.name for task in self.tasks]})"
 
+    def __str__(self):
+        return self.__repr__()
+
     def __iter__(self) -> Generator[AgentTask, None, None]:
         return (self.graph.nodes[node]["task"] for node in nx.topological_sort(self.graph))
 
