@@ -38,17 +38,19 @@ def test_hf_cloud_provider_builds_openai_client_with_hf_router(monkeypatch):
 
     monkeypatch.setattr(module, "ChatOpenAI", FakeChatOpenAI)
     monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("HF_CLOUD_MODEL", "hf/model")
 
     provider = HfCloudProvider()
 
     assert provider.get_model().__class__ is FakeChatOpenAI
-    assert captured["model"] == "openai/gpt-oss-120b:groq"
+    assert captured["model"] == "hf/model"
     assert captured["base_url"] == "https://router.huggingface.co/v1"
     assert captured["api_key"] == "test-token"
 
 
 def test_hf_cloud_provider_raises_when_hf_token_missing(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.setenv("HF_CLOUD_MODEL", "hf/model")
     provider = HfCloudProvider()
 
     with pytest.raises(KeyError):

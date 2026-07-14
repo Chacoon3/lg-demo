@@ -3,9 +3,7 @@ from enum import Enum
 from importlib import util
 from pathlib import Path
 
-import pytest
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
-from pydantic import ValidationError
 
 os.environ.setdefault("TAVILY_API_KEY", "test-key")
 
@@ -93,12 +91,14 @@ def test_tool_node_executes_tool_calls_and_returns_runtime_state():
         state={},
     )
 
-    with pytest.raises(ValidationError, match="state"):
-        node(state)
+    result = node(state)
 
-    # Tool invocations still happen before RuntimeState validation fails.
     assert add_tool.calls == [{"a": 1, "b": 2}]
     assert mult_tool.calls == [{"a": 2, "b": 3}]
+    assert result.llm_calls == 0
+    assert result.tool_calls == 2
+    assert result.state is None
+    assert [message.content for message in result.messages] == ["3", "6"]
 
 
 def test_tool_node_bind_with_model():
@@ -123,12 +123,15 @@ def test_arithmetic_inference_node_invokes_model_with_system_prompt():
         state={},
     )
 
-    with pytest.raises(ValidationError, match="state"):
-        node(state)
+    result = node(state)
 
     assert isinstance(model.last_messages[0], SystemMessage)
     assert "arithmetic" in model.last_messages[0].content.lower()
     assert model.last_messages[1].content == "6 * 7"
+    assert result.messages == [model_response]
+    assert result.llm_calls == 1
+    assert result.tool_calls == 0
+    assert result.state is None
 
 
 def test_prompt_classifier_node_wraps_structured_response_value():
@@ -154,8 +157,11 @@ def test_prompt_classifier_node_wraps_structured_response_value():
         state={},
     )
 
-    with pytest.raises(ValidationError, match="state"):
-        node(state)
+    result = node(state)
 
     assert isinstance(structured.last_messages[0], SystemMessage)
     assert "math, chat" in structured.last_messages[0].content
+    assert result.messages[0].content == "math"
+    assert result.llm_calls == 1
+    assert result.tool_calls == 0
+    assert result.state is None
