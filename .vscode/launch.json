@@ -34,6 +34,20 @@
       },
       "envFile": "${workspaceFolder}/.env.local",
       "justMyCode": true
+    },
+
+    {
+      "name": "LG Demo: CLI Agent",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/agent_cli/cli_entry.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "envFile": "${workspaceFolder}/.env.local",
+      "justMyCode": true
     }
   ]
 }
