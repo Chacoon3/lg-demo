@@ -134,7 +134,7 @@ def run_command(command: str) -> str:
 
 def build_agent():
     model = ChatOpenAI(
-        model="gpt-5-mini",
+        model=os.environ.get("OPENAI_MODEL", "gpt-5.4-nano"),
         api_key=os.environ["OPENAI_API_KEY"],
     )
 
