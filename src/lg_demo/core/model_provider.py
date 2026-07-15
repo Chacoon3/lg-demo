@@ -13,13 +13,13 @@ class ModelProvider(ABC):
     __MODEL_REGISTRY: dict[str, ModelProvider] = {}
 
     @abstractmethod
-    def _get_model_key(self) -> str: ...
+    def get_model_key(self) -> str: ...
 
     @abstractmethod
     def _get_model(self) -> BaseChatModel: ...
 
     def get_model(self) -> BaseChatModel:
-        key = self._get_model_key()
+        key = self.get_model_key()
         if key in self.__MODEL_REGISTRY:
             return self.__MODEL_REGISTRY[key]._get_model()
         model = self._get_model()
@@ -29,7 +29,7 @@ class ModelProvider(ABC):
 
 class ChatOllamaProvider(ModelProvider):
 
-    def _get_model_key(self) -> str:
+    def get_model_key(self) -> str:
         return f"{self.model_name}-{self.temperature}-{self.num_gpu}"
 
     def __init__(self, model_name: str = None, temperature: float = 0, num_gpu: int = 1):
@@ -51,7 +51,7 @@ class ChatOllamaProvider(ModelProvider):
 
 class HfCloudProvider(ModelProvider):
 
-    def _get_model_key(self) -> str:
+    def get_model_key(self) -> str:
         return f"{self.model_name}"
 
     def __init__(self, model_name: str = None):
@@ -78,7 +78,7 @@ class OpenAICloudProvider(ModelProvider):
                 "Model name must be provided either as an argument or through the OPENAI_MODEL environment variable."
             )
 
-    def _get_model_key(self) -> str:
+    def get_model_key(self) -> str:
         return f"{self.model_name}"
 
     def _get_model(self) -> BaseChatModel:

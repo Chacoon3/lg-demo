@@ -8,7 +8,6 @@ from lg_demo.core.router import DirectRouter, EntryRouter, ToolCallRouter
 from lg_demo.core.runtime import RuntimeBuilder
 from lg_demo.core.states import AgentPlan, RuntimeState
 from lg_demo.core.tools import web_search
-from lg_demo.utils.caching import AppDiskCache
 from lg_demo.utils.dag import Dag
 
 
@@ -18,10 +17,10 @@ class TravelPlannerNode(InferenceNode):
         model = model.with_structured_output(AgentPlan)
         super().__init__(name, model)
 
-    @AppDiskCache.wrap
     def __call__(self, state: RuntimeState) -> RuntimeState:
         msg: AgentPlan = self.model.invoke([SystemMessage(content="""
 Solve the user's problem by breaking it down into a series of actionable tasks.
+The tasks should not require any external input beyond what is already available in the state.
 Give each task a concise and unique name and put the task instruction in the "description" field.
 If a task depends on any other tasks, put the other tasks' names in the "dependencies" field.
 """)] + state.messages)
@@ -46,7 +45,7 @@ Execute the task given to you.
         if not dag:
             raise ValueError("No task DAG found in the state.")
 
-        msg_history = [sys_msg]
+        msg_history = state.messages + [sys_msg]
         llm_call = 0
         task_output = {}
         for task in dag:
@@ -55,7 +54,7 @@ Execute the task given to you.
                 HumanMessage(content=f"Process the task {task.name}: {task.description}")
             )
             resp = self.model.invoke(msg_history)
-            msg_history.pop()
+            msg_history.append(resp)
             task_output[task.name] = resp.content
             task.status = "completed"
 
