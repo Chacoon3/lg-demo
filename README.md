@@ -74,6 +74,19 @@ HF_TOKEN=...
 
 ```env
 TAVILY_API_KEY=...
+
+# Optional cache backend (defaults to local disk cache)
+# APP_CACHE_BACKEND=disk
+# DISK_CACHE_DIR=./.cache
+
+# Use Redis for shared/distributed cache
+# APP_CACHE_BACKEND=redis
+# REDIS_URL=redis://localhost:6379/0
+# REDIS_CACHE_PREFIX=lg_demo:cache
+# REDIS_SOCKET_TIMEOUT_SECONDS=1.0
+
+# Optional default cache TTL in seconds (applies to disk or Redis backend)
+# APP_CACHE_TTL_SECONDS=300
 ```
 
 ## Run the API
