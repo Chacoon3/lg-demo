@@ -62,7 +62,7 @@ Execute the task given to you.
             f"{task_name}: {output}" for task_name, output in task_output.items()
         )
         summerize_msg = [SystemMessage(content=f"""
-Please summarize the task outputs and generate an answer to the user's request.
+Summarize the task outputs and generate an answer to the user's request.
 {task_output_string}
                 """)]
 
