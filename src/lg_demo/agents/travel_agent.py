@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
+from os import cpu_count
+
 from langchain.chat_models import BaseChatModel
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
@@ -19,7 +22,9 @@ class TravelPlannerNode(InferenceNode):
 
     def __call__(self, state: RuntimeState) -> RuntimeState:
         msg: AgentPlan = self.model.invoke([SystemMessage(content="""
-Solve the user's problem by breaking it down into a series of actionable tasks.
+Solve the user's problem by breaking it down into a directed acyclic graph (DAG) of tasks.
+Each task should be a single, well-defined action that can be executed independently.
+The tasks should be designed to achieve the user's goal in a logical sequence, with dependencies clearly defined.
 The tasks should not require any external input beyond what is already available in the state.
 Give each task a concise and unique name and put the task instruction in the "description" field.
 If a task depends on any other tasks, put the other tasks' names in the "dependencies" field.
@@ -44,19 +49,27 @@ Execute the task given to you.
         dag: Dag = state.state.get("dag", [])
         if not dag:
             raise ValueError("No task DAG found in the state.")
+        get_logger().info(
+            "Executing tasks in DAG", task_count=len(dag), task_names=[task.name for task in dag]
+        )
 
         msg_history = state.messages + [sys_msg]
         llm_call = 0
         task_output = {}
-        for task in dag:
-            llm_call += 1
-            msg_history.append(
-                HumanMessage(content=f"Process the task {task.name}: {task.description}")
-            )
-            resp = self.model.invoke(msg_history)
-            msg_history.append(resp)
-            task_output[task.name] = resp.content
-            task.status = "completed"
+        for layer in dag.iter_layers():
+            with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+                futures = []
+                for task in layer:
+                    llm_call += 1
+                    msg_history.append(
+                        HumanMessage(content=f"Process the task {task.name}: {task.description}")
+                    )
+                    futures.append(executor.submit(self.model.invoke, msg_history))
+                for task, future in zip(layer, futures):
+                    resp = future.result()
+                    msg_history.append(resp)
+                    task_output[task.name] = resp.content
+                    task.status = "completed"
 
         task_output_string = "\n".join(
             f"{task_name}: {output}" for task_name, output in task_output.items()

@@ -24,6 +24,9 @@ class Dag:
     def __iter__(self) -> Generator[AgentTask, None, None]:
         return (self.graph.nodes[node]["task"] for node in nx.topological_sort(self.graph))
 
+    def __len__(self) -> int:
+        return len(self.tasks)
+
     def iter_layers(self) -> Generator[list[AgentTask], None, None]:
         for layer in nx.topological_generations(self.graph):
             yield [self.graph.nodes[node]["task"] for node in layer]
