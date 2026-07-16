@@ -61,10 +61,12 @@ Execute the task given to you.
                 futures = []
                 for task in layer:
                     llm_call += 1
-                    msg_history.append(
+                    # parallel tasks can share the same message history up to this point, but each task gets its own copy of the history with its own task instruction appended.
+                    msg_history_copy = list(msg_history)
+                    msg_history_copy.append(
                         HumanMessage(content=f"Process the task {task.name}: {task.description}")
                     )
-                    futures.append(executor.submit(self.model.invoke, msg_history))
+                    futures.append(executor.submit(self.model.invoke, msg_history_copy))
                 for task, future in zip(layer, futures):
                     resp = future.result()
                     msg_history.append(resp)
