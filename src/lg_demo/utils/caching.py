@@ -4,6 +4,7 @@ import os
 from typing import Any
 
 from lg_demo.utils.disk_cache import DiskCache
+from lg_demo.utils.json_file_writer import JsonFileWriter
 from lg_demo.utils.redis_cache import RedisCache
 
 
@@ -42,3 +43,5 @@ AppCache = _build_app_cache()
 
 # Backwards-compatible name used by existing imports.
 AppDiskCache = AppCache
+
+AppJsonLogger = JsonFileWriter("./local_files/json/")

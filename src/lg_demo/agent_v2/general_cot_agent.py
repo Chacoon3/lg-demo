@@ -33,7 +33,9 @@ Summarize the user's request into a concise and clear summary that captures the 
 
 def _planning_node(state: SnapshotState, model: BaseChatModel) -> SnapshotState:
     sys_prompt = """
-You are an AI agent that breaks down the user's request into a series of actionable tasks.
+You should come up with a series of tasks to achieve the user's request.
+If the request is simple, you can generate a single task.
+All the tasks should require no further input from the user, and should be clear enough to be executed by a LLM.
 Each task should have a concise name that summarizes its purpose.
 In the "description" field provide detailed instructions regarding how to execute the task so that a LLM can understand and perform it.
 You should generate the tasks in order of execution.
