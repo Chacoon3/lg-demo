@@ -27,7 +27,7 @@ class ModelProvider(ABC):
         return model
 
 
-class ChatOllamaProvider(ModelProvider):
+class OllamaProvider(ModelProvider):
 
     def get_model_key(self) -> str:
         return f"{self.model_name}-{self.temperature}-{self.num_gpu}"

@@ -1,18 +1,22 @@
+from typing import Generic, TypeVar
+
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from lg_demo.core.nodes import BaseNode
 from lg_demo.core.router import BaseRouter, ConditionalRouter, DirectRouter, EntryRouter
-from lg_demo.core.states import RuntimeState
+from lg_demo.core.states import BaseRuntimeState
+
+T = TypeVar("T", bound=BaseRuntimeState)
 
 
-class RuntimeBuilder:
+class RuntimeBuilder(Generic[T]):
     def __init__(self, nodes: list[BaseNode], routers: list[BaseRouter]):
         self.nodes = sorted(nodes, key=lambda node: node.priority)
         self.routers = routers
 
-    def build(self) -> CompiledStateGraph:
-        graph = StateGraph(RuntimeState)
+    def build(self, state_type: type[T]) -> CompiledStateGraph[T]:
+        graph = StateGraph(state_type)
         for n in self.nodes:
             graph.add_node(n.name, n)
 

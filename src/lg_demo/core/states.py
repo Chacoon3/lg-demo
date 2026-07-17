@@ -8,12 +8,25 @@ from langchain.messages import AnyMessage
 from langgraph.graph import add_messages
 from pydantic import BaseModel, Field
 
+TaskState = Literal["pending", "in_progress", "completed", "failed"]
 
-class RuntimeState(BaseModel):
+
+class BaseRuntimeState(BaseModel):
+    pass
+
+
+class RuntimeState(BaseRuntimeState):
     messages: Annotated[list[AnyMessage], add_messages]
     llm_calls: Annotated[int, operator.add]
     tool_calls: Annotated[int, operator.add]
     state: Annotated[dict[str, Any] | None, operator.or_] = Field(None, exclude=True)
+
+
+class SnapshotState(BaseRuntimeState):
+    messages: Annotated[list[AnyMessage], None]
+    llm_calls: Annotated[int, None]
+    tool_calls: Annotated[int, None]
+    state: Annotated[dict[str, Any] | None, None] = Field(None, exclude=True)
 
 
 class AgentTaskDependency(BaseModel):
@@ -25,7 +38,7 @@ class AgentTask(BaseModel):
     name: str
     description: str
     dependencies: list[str] = []
-    status: Literal["pending", "in_progress", "completed", "failed"] = "pending"
+    status: TaskState = "pending"
 
     @cached_property
     def get_dependencies(self) -> list[AgentTaskDependency]:
@@ -39,3 +52,36 @@ class AgentTask(BaseModel):
 
 class AgentPlan(BaseModel):
     tasks: list[AgentTask]
+
+
+class Action(BaseModel):
+    name: str
+    description: str
+    state: TaskState = "pending"
+
+
+class ChainOfAction(BaseModel):
+    next_step: int = Field(0, description="Index of the next step to execute")
+    steps: list[Action] = Field(
+        default_factory=list, description="List of actions to be executed in order"
+    )
+
+    # validator to validate the next_step index is within the bounds of the steps list
+    @classmethod
+    def validate_next_step(cls, v, values):
+        if "steps" in values and (v < 0 or v >= len(values["steps"])):
+            raise ValueError("next_step index is out of bounds of the steps list")
+        # also validate the step being pointed is in a valid state (not completed or failed)
+        if "steps" in values and values["steps"]:
+            step = values["steps"][v]
+            if step.state in ["completed", "failed"]:
+                raise ValueError(f"next_step index points to a step that is already {step.state}")
+        return v
+
+    def set_current_step_state(self, state: TaskState) -> None:
+        if self.steps and 0 <= self.next_step < len(self.steps):
+            self.steps[self.next_step].state = state
+            if state == "completed":
+                self.next_step += 1
+        else:
+            raise IndexError("next_step index is out of bounds of the steps list")

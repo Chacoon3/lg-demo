@@ -31,7 +31,7 @@ Your task is to summarize the structured JSON output and convert it into human-r
         )
 
 
-def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph:
+def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState]:
     tools = ToolNode(
         name="trading_tools", tools=[web_search]
     )  # Replace with actual tools as needed
@@ -56,6 +56,6 @@ def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph:
     agent = RuntimeBuilder(
         nodes=[trading_node, tools, summary_node],
         routers=[entry, conditional_tool_call_router, tool_to_summary_router],
-    ).build()
+    ).build(RuntimeState)
 
     return agent

@@ -22,7 +22,7 @@ class ArithmeticInferenceNode(InferenceNode):
         )
 
 
-def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph:
+def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState]:
     math_tool = ToolNode(name="tool_node", tools=[add, multiply, divide, power])
     model = model.bind_tools(math_tool.tools)
 
@@ -38,6 +38,6 @@ def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph:
     agent = RuntimeBuilder(
         nodes=[math_tool, arith_node],
         routers=[entry_router, conditional_tool_call_router],
-    ).build()
+    ).build(RuntimeState)
 
     return agent

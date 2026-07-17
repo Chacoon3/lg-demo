@@ -105,6 +105,6 @@ def build_travel_agent(model: BaseChatModel) -> CompiledStateGraph:
     agent = RuntimeBuilder(
         nodes=[planner_node, tools, action_node],
         routers=[entry_route, tool_call_router, action_route],
-    ).build()
+    ).build(RuntimeState)
 
     return agent
