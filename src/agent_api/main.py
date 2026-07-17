@@ -1,6 +1,7 @@
 """FastAPI application entry point."""
 
 import os
+from contextlib import ExitStack
 
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
@@ -16,6 +17,7 @@ from agent_api.middleware import (
     logging_middleware,
 )
 from lg_demo.agents import AgentRegistry
+from lg_demo.core.checkpointing import app_checkpointer_context
 
 
 @asynccontextmanager
@@ -24,11 +26,18 @@ async def lifespan(app: FastAPI):
 
     provider = model_provider.OpenAICloudProvider()
     get_logger().info("Model provider configured.", model=provider.get_model_key())
-    app.state.agent_registry = AgentRegistry(provider.get_model())
 
-    get_logger().info("Model and tools have been configured.")
+    with ExitStack() as stack:
+        checkpointer = stack.enter_context(app_checkpointer_context())
+        app.state.checkpointer = checkpointer
+        app.state.agent_registry = AgentRegistry(provider.get_model(), checkpointer=checkpointer)
 
-    yield
+        get_logger().info(
+            "Model and tools have been configured.",
+            checkpointer_backend=os.getenv("LG_DEMO_CHECKPOINTER_BACKEND", "none"),
+        )
+
+        yield
 
     get_logger().info("Application exiting.")
 

@@ -9,6 +9,20 @@ from agent_api.response_builder import response_ok
 agent_api_router = APIRouter(prefix="/prompt")
 
 
+def _build_invoke_config(request: Request, payload: dict) -> dict | None:
+    headers = getattr(request, "headers", {})
+    thread_id = payload.get("thread_id") or headers.get("x-thread-id")
+    if not thread_id:
+        return None
+    return {"configurable": {"thread_id": str(thread_id)}}
+
+
+def _invoke_agent(agent, payload: dict, config: dict | None):
+    if config is None:
+        return agent.invoke(payload)
+    return agent.invoke(payload, config=config)
+
+
 @agent_api_router.get("/health_check")
 async def health_check():
     return response_ok({"status": "ok"})
@@ -31,7 +45,8 @@ async def general(request: Request, agent_registry: AgentRegistryDep):
     prompt = data.get("prompt")
     is_debug = data.get("debug", False)
     messages = [HumanMessage(content=prompt)]
-    ans = agent_registry.general_agent.invoke({"messages": messages})
+    config = _build_invoke_config(request, data)
+    ans = _invoke_agent(agent_registry.general_agent, {"messages": messages}, config)
     last_msg = ans["messages"][-1].content if ans["messages"] else None
     return response_ok(last_msg if not is_debug else ans)
 
@@ -42,7 +57,8 @@ async def finance(request: Request, agent_registry: AgentRegistryDep):
     prompt = data.get("prompt")
     is_debug = data.get("debug", False)
     messages = [HumanMessage(content=prompt)]
-    ans = agent_registry.finance_agent.invoke({"messages": messages})
+    config = _build_invoke_config(request, data)
+    ans = _invoke_agent(agent_registry.finance_agent, {"messages": messages}, config)
     last_msg = ans["messages"][-1].content if ans["messages"] else None
     return response_ok(last_msg if not is_debug else ans)
 
@@ -53,7 +69,8 @@ async def travel(request: Request, agent_registry: AgentRegistryDep):
     prompt = data.get("prompt")
     is_debug = data.get("debug", False)
     messages = [HumanMessage(content=prompt)]
-    ans = agent_registry.travel_agent.invoke({"messages": messages})
+    config = _build_invoke_config(request, data)
+    ans = _invoke_agent(agent_registry.travel_agent, {"messages": messages}, config)
     ans.pop("state")
     last_msg = ans["messages"][-1].content if ans["messages"] else None
     return response_ok(last_msg if not is_debug else ans)

@@ -13,8 +13,9 @@ from agent_api.api import general, health_check
 
 
 class FakeRequest:
-    def __init__(self, payload):
+    def __init__(self, payload, headers=None):
         self._payload = payload
+        self.headers = headers or {}
 
     async def json(self):
         return self._payload
@@ -25,8 +26,8 @@ class FakeAgent:
         self._response = response
         self.calls = []
 
-    def invoke(self, payload):
-        self.calls.append(payload)
+    def invoke(self, payload, config=None):
+        self.calls.append((payload, config))
         return self._response
 
 
@@ -48,7 +49,8 @@ def test_prompt_returns_last_message_content_when_not_debug():
     result = asyncio.run(general(request, agent_registry))
 
     assert result == {"data": "answer"}
-    assert agent.calls[0]["messages"][0].content == "hello"
+    assert agent.calls[0][0]["messages"][0].content == "hello"
+    assert agent.calls[0][1] is None
 
 
 def test_prompt_returns_full_response_when_debug_enabled():
@@ -70,3 +72,14 @@ def test_prompt_returns_none_when_no_messages():
     result = asyncio.run(general(request, agent_registry))
 
     assert result == {"data": None}
+
+
+def test_prompt_passes_thread_id_to_agent_invoke_config():
+    agent = FakeAgent(response={"messages": [AIMessage(content="answer")]})
+    agent_registry = FakeAgentRegistry(general_agent=agent)
+    request = FakeRequest(payload={"prompt": "hello", "thread_id": "thread-123"})
+
+    result = asyncio.run(general(request, agent_registry))
+
+    assert result == {"data": "answer"}
+    assert agent.calls[0][1] == {"configurable": {"thread_id": "thread-123"}}

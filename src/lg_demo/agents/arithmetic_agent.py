@@ -1,3 +1,5 @@
+from typing import Any
+
 from langchain.chat_models import BaseChatModel
 from langchain.messages import SystemMessage
 from langgraph.graph import START, StateGraph
@@ -21,7 +23,10 @@ class ArithmeticInferenceNode(InferenceNode):
         )
 
 
-def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState]:
+def build_simple_arithmetic_agent(
+    model: BaseChatModel,
+    checkpointer: Any | None = None,
+) -> CompiledStateGraph[RuntimeState]:
     tools = [add, multiply, divide, power]
     model = bind_tools_to_model(model, tools)
 
@@ -36,4 +41,4 @@ def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph[Ru
     graph.add_edge(START, arith_node.name)
     graph.add_edge(arith_node.name, "tool_node")
 
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)

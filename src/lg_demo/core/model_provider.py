@@ -21,7 +21,7 @@ class ModelProvider(ABC):
     def get_model(self) -> BaseChatModel:
         key = self.get_model_key()
         if key in self.__MODEL_REGISTRY:
-            return self.__MODEL_REGISTRY[key]._get_model()
+            return self.__MODEL_REGISTRY[key]._get_model()  # pylint: disable=W0212
         model = self._get_model()
         self.__MODEL_REGISTRY[key] = self
         return model

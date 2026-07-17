@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from os import cpu_count
+from typing import Any
 
 from langchain.chat_models import BaseChatModel
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
@@ -87,7 +88,10 @@ Summarize the task outputs and generate an answer to the user's request.
         )
 
 
-def build_travel_agent(model: BaseChatModel) -> CompiledStateGraph:
+def build_travel_agent(
+    model: BaseChatModel,
+    checkpointer: Any | None = None,
+) -> CompiledStateGraph:
     tools = [web_search]
 
     model = bind_tools_to_model(model, tools)
@@ -106,4 +110,4 @@ def build_travel_agent(model: BaseChatModel) -> CompiledStateGraph:
     graph.add_edge(action_node.name, "travel_tools")
     graph.add_edge(planner_node.name, action_node.name)
 
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)

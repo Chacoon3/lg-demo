@@ -1,3 +1,5 @@
+from typing import Any
+
 from langchain.chat_models import BaseChatModel
 from langchain.messages import SystemMessage
 from langgraph.graph import START, StateGraph
@@ -30,7 +32,10 @@ Your task is to summarize the structured JSON output and convert it into human-r
         )
 
 
-def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState]:
+def build_trading_agent(
+    model: BaseChatModel,
+    checkpointer: Any | None = None,
+) -> CompiledStateGraph[RuntimeState]:
     tools = [web_search]
     model_with_tools = bind_tools_to_model(model, tools)
 
@@ -49,4 +54,4 @@ def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState
     graph.add_edge(trading_node.name, "trading_tools")
     graph.add_edge("trading_tools", summary_node.name)
 
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)
