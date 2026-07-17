@@ -1,6 +1,6 @@
 from langchain.chat_models import BaseChatModel
 
-from lg_demo.agent_v2.travel_agent import build_cot_agent
+from lg_demo.agent_v2.general_cot_agent import build_cot_agent
 from lg_demo.agents.arithmetic_agent import build_simple_arithmetic_agent
 from lg_demo.agents.trading_agent import build_trading_agent
 from lg_demo.agents.travel_agent import build_travel_agent

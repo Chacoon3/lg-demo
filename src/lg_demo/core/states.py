@@ -24,9 +24,9 @@ class RuntimeState(BaseRuntimeState):
 
 class SnapshotState(BaseRuntimeState):
     messages: Annotated[list[AnyMessage], None]
-    llm_calls: Annotated[int, None]
-    tool_calls: Annotated[int, None]
-    state: Annotated[dict[str, Any] | None, None] = Field(None, exclude=True)
+    llm_calls: Annotated[int, None] = 0
+    tool_calls: Annotated[int, None] = 0
+    state: Annotated[Any, None] = Field(None, exclude=True)
 
 
 class AgentTaskDependency(BaseModel):
