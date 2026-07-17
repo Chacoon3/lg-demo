@@ -1,10 +1,9 @@
 from langchain.chat_models import BaseChatModel
 from langchain.messages import SystemMessage
+from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from lg_demo.core.nodes import InferenceNode, ToolNode
-from lg_demo.core.router import EntryRouter, ToolCallRouter
-from lg_demo.core.runtime import RuntimeBuilder
+from lg_demo.core.nodes import InferenceNode, bind_tools_to_model, execute_tool_calls
 from lg_demo.core.states import RuntimeState
 from lg_demo.core.tools import add, divide, multiply, power
 
@@ -23,21 +22,18 @@ class ArithmeticInferenceNode(InferenceNode):
 
 
 def build_simple_arithmetic_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState]:
-    math_tool = ToolNode(name="tool_node", tools=[add, multiply, divide, power])
-    model = model.bind_tools(math_tool.tools)
+    tools = [add, multiply, divide, power]
+    model = bind_tools_to_model(model, tools)
 
     arith_node = ArithmeticInferenceNode(name="arith_node", model=model)
 
-    entry_router = EntryRouter(entry_node=arith_node)
+    def tool_node(state: RuntimeState) -> RuntimeState:
+        return execute_tool_calls(state, tools)
 
-    conditional_tool_call_router = ToolCallRouter(
-        from_nodes=[arith_node],
-        to_nodes=[math_tool],
-    )
+    graph = StateGraph(RuntimeState)
+    graph.add_node(arith_node.name, arith_node)
+    graph.add_node("tool_node", tool_node)
+    graph.add_edge(START, arith_node.name)
+    graph.add_edge(arith_node.name, "tool_node")
 
-    agent = RuntimeBuilder(
-        nodes=[math_tool, arith_node],
-        routers=[entry_router, conditional_tool_call_router],
-    ).build(RuntimeState)
-
-    return agent
+    return graph.compile()

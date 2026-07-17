@@ -26,33 +26,25 @@ class InferenceNode(BaseNode):
     def __call__(self, state: RuntimeState) -> RuntimeState: ...
 
 
-class ToolNode(BaseNode):
+def bind_tools_to_model(model: BaseChatModel, tools: Sequence[BaseTool]) -> BaseChatModel:
+    return model.bind_tools(list(tools))
 
-    def __init__(self, name: str, tools: Sequence[BaseTool]):
-        super().__init__(name, priority=0)
-        self.tools = list(tools)
-        self.registry: dict = {tool.name: tool for tool in tools}
 
-    def get_tool(self, name: str) -> BaseTool:
-        return self.registry.get(name)
+def execute_tool_calls(state: RuntimeState, tools: Sequence[BaseTool]) -> RuntimeState:
+    registry: dict[str, BaseTool] = {tool.name: tool for tool in tools}
+    result = []
+    for tool_call in state.messages[-1].tool_calls:
+        tool = registry.get(tool_call["name"])
+        if tool is None:
+            raise ValueError(f"Tool call '{tool_call['name']}' is not supported")
+        observation = tool.invoke(tool_call["args"])
+        result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
 
-    def list_tools(self) -> Sequence[BaseTool]:
-        return self.tools
-
-    def __call__(self, state: RuntimeState) -> RuntimeState:
-        result = []
-        for tool_call in state.messages[-1].tool_calls:
-            tool = self.get_tool(tool_call["name"])
-            observation = tool.invoke(tool_call["args"])
-            result.append(ToolMessage(content=observation, tool_call_id=tool_call["id"]))
-        return RuntimeState(
-            messages=result,
-            llm_calls=0,
-            tool_calls=len(result),
-        )
-
-    def bind_with_model(self, model: BaseChatModel) -> BaseChatModel:
-        return model.bind_tools(self.tools)
+    return RuntimeState(
+        messages=result,
+        llm_calls=0,
+        tool_calls=len(result),
+    )
 
 
 class PromptClassifierNode(InferenceNode):

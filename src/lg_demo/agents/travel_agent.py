@@ -3,12 +3,11 @@ from os import cpu_count
 
 from langchain.chat_models import BaseChatModel
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
+from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from agent_api.app_logging import get_logger
-from lg_demo.core.nodes import InferenceNode, ToolNode
-from lg_demo.core.router import DirectRouter, EntryRouter, ToolCallRouter
-from lg_demo.core.runtime import RuntimeBuilder
+from lg_demo.core.nodes import InferenceNode, bind_tools_to_model, execute_tool_calls
 from lg_demo.core.states import AgentPlan, RuntimeState
 from lg_demo.core.tools import web_search
 from lg_demo.utils.dag import Dag
@@ -89,22 +88,22 @@ Summarize the task outputs and generate an answer to the user's request.
 
 
 def build_travel_agent(model: BaseChatModel) -> CompiledStateGraph:
-    tools = ToolNode(name="travel_tools", tools=[web_search])  # Replace with actual tools as needed
+    tools = [web_search]
 
-    model = model.bind_tools(tools.tools)
+    model = bind_tools_to_model(model, tools)
     planner_node = TravelPlannerNode(name="planner_node", model=model)
     action_node = TravelActionNode(name="action_node", model=model)
 
-    entry_route = EntryRouter(entry_node=planner_node)
-    tool_call_router = ToolCallRouter(
-        from_nodes=[planner_node, action_node],
-        to_nodes=[tools],
-    )
-    action_route = DirectRouter(from_nodes=[planner_node], to_nodes=[action_node])
+    def travel_tools(state: RuntimeState) -> RuntimeState:
+        return execute_tool_calls(state, tools)
 
-    agent = RuntimeBuilder(
-        nodes=[planner_node, tools, action_node],
-        routers=[entry_route, tool_call_router, action_route],
-    ).build(RuntimeState)
+    graph = StateGraph(RuntimeState)
+    graph.add_node(planner_node.name, planner_node)
+    graph.add_node("travel_tools", travel_tools)
+    graph.add_node(action_node.name, action_node)
+    graph.add_edge(START, planner_node.name)
+    graph.add_edge(planner_node.name, "travel_tools")
+    graph.add_edge(action_node.name, "travel_tools")
+    graph.add_edge(planner_node.name, action_node.name)
 
-    return agent
+    return graph.compile()

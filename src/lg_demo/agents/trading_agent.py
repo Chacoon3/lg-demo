@@ -1,10 +1,9 @@
 from langchain.chat_models import BaseChatModel
 from langchain.messages import SystemMessage
+from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from lg_demo.core.nodes import InferenceNode, ToolNode
-from lg_demo.core.router import DirectRouter, EntryRouter, ToolCallRouter
-from lg_demo.core.runtime import RuntimeBuilder
+from lg_demo.core.nodes import InferenceNode, bind_tools_to_model, execute_tool_calls
 from lg_demo.core.states import RuntimeState
 from lg_demo.core.tools import web_search
 
@@ -32,30 +31,22 @@ Your task is to summarize the structured JSON output and convert it into human-r
 
 
 def build_trading_agent(model: BaseChatModel) -> CompiledStateGraph[RuntimeState]:
-    tools = ToolNode(
-        name="trading_tools", tools=[web_search]
-    )  # Replace with actual tools as needed
-    model_with_tools = model.bind_tools(tools.tools)
+    tools = [web_search]
+    model_with_tools = bind_tools_to_model(model, tools)
 
     trading_node = TradingInferenceNode(name="trading_node", model=model_with_tools)
 
     summary_node = FinanceSearchSummaryNode(name="summary_node", model=model_with_tools)
 
-    entry = EntryRouter(entry_node=trading_node)
+    def trading_tools(state: RuntimeState) -> RuntimeState:
+        return execute_tool_calls(state, tools)
 
-    conditional_tool_call_router = ToolCallRouter(
-        from_nodes=[trading_node],
-        to_nodes=[tools],
-    )
+    graph = StateGraph(RuntimeState)
+    graph.add_node(trading_node.name, trading_node)
+    graph.add_node("trading_tools", trading_tools)
+    graph.add_node(summary_node.name, summary_node)
+    graph.add_edge(START, trading_node.name)
+    graph.add_edge(trading_node.name, "trading_tools")
+    graph.add_edge("trading_tools", summary_node.name)
 
-    tool_to_summary_router = DirectRouter(
-        from_nodes=[tools],
-        to_nodes=[summary_node],
-    )
-
-    agent = RuntimeBuilder(
-        nodes=[trading_node, tools, summary_node],
-        routers=[entry, conditional_tool_call_router, tool_to_summary_router],
-    ).build(RuntimeState)
-
-    return agent
+    return graph.compile()

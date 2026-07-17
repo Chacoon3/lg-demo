@@ -21,7 +21,7 @@ def _load_arithmetic_inference_node():
 
 
 ArithmeticInferenceNode = _load_arithmetic_inference_node()
-from lg_demo.core.nodes import PromptClassifierNode, ToolNode
+from lg_demo.core.nodes import PromptClassifierNode, bind_tools_to_model, execute_tool_calls
 from lg_demo.core.states import RuntimeState
 
 
@@ -61,20 +61,9 @@ class FakeStructuredModel:
         return self.response
 
 
-def test_tool_node_registry_and_tool_listing():
-    tool_a = FakeTool(name="a", result="1")
-    tool_b = FakeTool(name="b", result="2")
-    node = ToolNode(name="tool_node", tools=[tool_a, tool_b])
-
-    assert node.get_tool("a") is tool_a
-    assert node.get_tool("missing") is None
-    assert list(node.list_tools()) == [tool_a, tool_b]
-
-
-def test_tool_node_executes_tool_calls_and_returns_runtime_state():
+def test_execute_tool_calls_returns_runtime_state():
     add_tool = FakeTool(name="add", result="3")
     mult_tool = FakeTool(name="multiply", result="6")
-    node = ToolNode(name="tool_node", tools=[add_tool, mult_tool])
 
     state = RuntimeState(
         messages=[
@@ -91,7 +80,7 @@ def test_tool_node_executes_tool_calls_and_returns_runtime_state():
         state={},
     )
 
-    result = node(state)
+    result = execute_tool_calls(state, [add_tool, mult_tool])
 
     assert add_tool.calls == [{"a": 1, "b": 2}]
     assert mult_tool.calls == [{"a": 2, "b": 3}]
@@ -101,12 +90,33 @@ def test_tool_node_executes_tool_calls_and_returns_runtime_state():
     assert [message.content for message in result.messages] == ["3", "6"]
 
 
-def test_tool_node_bind_with_model():
+def test_execute_tool_calls_raises_for_unknown_tool():
+    add_tool = FakeTool(name="add", result="3")
+    state = RuntimeState(
+        messages=[
+            AIMessage(
+                content="",
+                tool_calls=[{"name": "multiply", "args": {"a": 1, "b": 2}, "id": "call-1"}],
+            )
+        ],
+        llm_calls=0,
+        tool_calls=0,
+        state={},
+    )
+
+    try:
+        execute_tool_calls(state, [add_tool])
+    except ValueError as exc:
+        assert "not supported" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for unsupported tool")
+
+
+def test_bind_tools_to_model_calls_model_bind_tools():
     tool = FakeTool(name="add", result="3")
-    node = ToolNode(name="tool_node", tools=[tool])
     model = FakeModel()
 
-    bound = node.bind_with_model(model)
+    bound = bind_tools_to_model(model, [tool])
 
     assert bound == "bound-model"
     assert model.bound_tools == [tool]
