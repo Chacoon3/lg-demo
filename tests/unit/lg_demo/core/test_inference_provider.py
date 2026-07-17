@@ -1,6 +1,6 @@
 import pytest
 
-from lg_demo.core.model_provider import ChatOllamaProvider, HfCloudProvider
+from lg_demo.core.model_provider import HfCloudProvider, OllamaProvider
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +21,7 @@ def test_chat_ollama_provider_builds_model_with_given_params(monkeypatch):
 
     monkeypatch.setattr(module, "ChatOllama", FakeChatOllama)
 
-    provider = ChatOllamaProvider(model_name="llama3", temperature=0.25, num_gpu=2)
+    provider = OllamaProvider(model_name="llama3", temperature=0.25, num_gpu=2)
 
     assert provider.get_model().__class__ is FakeChatOllama
     assert captured == {"model": "llama3", "temperature": 0.25, "num_gpu": 2}

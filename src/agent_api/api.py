@@ -15,11 +15,10 @@ async def health_check():
 
 
 @agent_api_router.get("/graph", response_class=Response)
-async def graph(request: Request, agent_class: Literal["general", "finance", "general_cot"]):
+async def graph(request: Request, agent_class: Literal["general", "finance"]):
     agent_map = {
         "general": request.app.state.agent_registry.general_agent,
         "finance": request.app.state.agent_registry.finance_agent,
-        "general_cot": request.app.state.agent_registry.general_cot,
     }
     agt = agent_map.get(agent_class)
     graph_png = agt.get_graph().draw_mermaid_png()
@@ -33,17 +32,6 @@ async def general(request: Request, agent_registry: AgentRegistryDep):
     is_debug = data.get("debug", False)
     messages = [HumanMessage(content=prompt)]
     ans = agent_registry.general_agent.invoke({"messages": messages})
-    last_msg = ans["messages"][-1].content if ans["messages"] else None
-    return response_ok(last_msg if not is_debug else ans)
-
-
-@agent_api_router.post("/general_cot")
-async def general_cot(request: Request, agent_registry: AgentRegistryDep):
-    data = await request.json()
-    prompt = data.get("prompt")
-    is_debug = data.get("debug", False)
-    messages = [HumanMessage(content=prompt)]
-    ans = agent_registry.general_cot.invoke({"messages": messages})
     last_msg = ans["messages"][-1].content if ans["messages"] else None
     return response_ok(last_msg if not is_debug else ans)
 

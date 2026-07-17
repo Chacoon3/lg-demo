@@ -3,6 +3,7 @@ import pytest
 from lg_demo.core.nodes import BaseNode
 from lg_demo.core.router import DirectRouter, EntryRouter, PromptClassRouter
 from lg_demo.core.runtime import RuntimeBuilder
+from lg_demo.core.states import RuntimeState
 
 
 class FakeStateGraph:
@@ -39,7 +40,7 @@ def test_runtime_builder_adds_nodes_in_priority_order_and_wires_routers(monkeypa
     ]
 
     builder = RuntimeBuilder(nodes=[node_high, node_low], routers=routers)
-    compiled = builder.build()
+    compiled = builder.build(RuntimeState)
     graph = FakeStateGraph.last_instance
 
     assert compiled == "compiled-graph"
@@ -61,7 +62,7 @@ def test_runtime_builder_rejects_multiple_entry_routers(monkeypatch):
     )
 
     with pytest.raises(ValueError, match="Multiple entry routers"):
-        builder.build()
+        builder.build(RuntimeState)
 
 
 def test_runtime_builder_rejects_unsupported_router_type(monkeypatch):
@@ -73,4 +74,4 @@ def test_runtime_builder_rejects_unsupported_router_type(monkeypatch):
     builder = RuntimeBuilder(nodes=[node], routers=[object()])
 
     with pytest.raises(ValueError, match="Unsupported router type"):
-        builder.build()
+        builder.build(RuntimeState)
