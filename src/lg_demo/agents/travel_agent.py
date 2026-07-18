@@ -56,8 +56,8 @@ Execute the task given to you.
         msg_history = state.messages + [sys_msg]
         llm_call = 0
         task_output = {}
-        for layer in dag.iter_layers():
-            with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+            for layer in dag.iter_layers():
                 futures = []
                 for task in layer:
                     llm_call += 1
